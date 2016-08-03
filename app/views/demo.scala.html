@@ -1,0 +1,28 @@
+@()
+
+@main("Demo application") {
+    <script type="text/javascript">
+        $(function() {
+            $.get("list", function (data) {
+                $.each(data, function (index, value) {
+                    $("#actors").append("<option>"+ value + "</option>");
+                })
+            })
+
+            $("#add").click(function () {
+                var actorName = $("#actors").val();
+
+                $.post("actor/" + actorName, function (data) {
+                    console.log(data);
+                })
+            })
+        });
+    </script>
+
+    <form action="upload" class="dropzone"></form>
+
+    <br />
+
+    <select name="actors" id="actors"></select>
+    <button id="add">Add Actor</button>
+}
