@@ -1,16 +1,17 @@
 package controllers;
 
-import actors.FileReader;
-import actors.HelloActor;
-import actors.WebSocketWriter;
-import actors.WordCountFileReader;
+import actors.*;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import javax.inject.*;
 
 import akka.actor.Props;
+import akka.actor.dsl.Creators;
 import akka.japi.Creator;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import messages.ReadFile;
+import messages.RegisterListener;
 import play.libs.Json;
 import play.mvc.*;
 
@@ -48,18 +49,29 @@ public class AsyncController extends Controller {
     private final ExecutionContextExecutor exec;
 
     Map<String, Props> actorRegistry = new HashMap<>();
-    List<ActorRef> workflow = new ArrayList<>();
 
-    ActorRef outputActor;
+    Map<String, ActorRef> actors = new HashMap<>();
+    List<ActorRef> workflow = new ArrayList<>();
 
     @Inject
     public AsyncController(ActorSystem actorSystem, ExecutionContextExecutor exec) {
         this.actorSystem = actorSystem;
         this.exec = exec;
 
-        actorRegistry.put("HelloActor", HelloActor.props());
         actorRegistry.put("FileReader", FileReader.props());
-        actorRegistry.put("WordCountFileReader", WordCountFileReader.props());
+        actorRegistry.put("WordCounter", WordCounter.props());
+        actorRegistry.put("StringReverse", StringReverse.props());
+        actorRegistry.put("OutputAdapter", OutputAdapter.props());
+    }
+
+    public Result connect(String source, String target) {
+        actors.get(source).tell(new RegisterListener(actors.get(target)), actors.get(target));
+        return ok("Connect: " + target + " listensTo " + source);
+    }
+
+    public Result detach(String source, String target) {
+        actors.get(source).tell(new DeregisterListener(actors.get(target)), actors.get(target));
+        return ok("Detach: " + target + " listensTo " + source);
     }
 
 
@@ -68,11 +80,11 @@ public class AsyncController extends Controller {
     }
 
     public LegacyWebSocket<String> socket() {
+        final ActorRef last = workflow.get(workflow.size()-1);
+
         return WebSocket.withActor(new Function<ActorRef, Props>() {
             @Override
             public Props apply(ActorRef actorRef) {
-                ActorRef last = workflow.get(workflow.size()-1);
-                System.out.println("Registering actor " + last + " with websocket.");
                 return Props.create(WebSocketWriter.class, actorRef, last);
             }
         });
@@ -82,22 +94,40 @@ public class AsyncController extends Controller {
         return ok(console.render());
     }
 
-    /*
-    public CompletionStage<Result> actor(String name, String message) {
-        Props props = actorRegistry.get(name);
-        ActorRef actorRef = actorSystem.actorOf(props);
-
-        return FutureConverters.toJava(ask(actorRef, message, 1000))
-                .thenApply(response -> ok((String) response));
-    }*/
-
-    public Result actor(String name) {
+    public Result add(String name) {
         Props props = actorRegistry.get(name);
         ActorRef actorRef = actorSystem.actorOf(props);
 
         workflow.add(actorRef);
+        actors.put(name, actorRef);
 
-        return ok("Actor created: " + actorRef);
+        ObjectNode json = Json.newObject();
+
+        String type = "actor";
+
+        if (name.equals("FileReader")) {
+            type = "input";
+        } else if (name.equals("OutputAdapter")) {
+            type = "output";
+        }
+
+        json.put("actor", name);
+        json.put("type", type);
+
+        return ok(json);
+    }
+
+    public Result remove(String name) {
+        ActorRef actorRef = actors.remove(name);
+
+        //int actorPos = workflow.indexOf(actorRef);
+        //ActorRef upstream = workflow.get(actorPos-1);
+        //ActorRef downstream = workflow.get(actorPos+1);
+
+        //upstream.tell(new RegisterListener(downstream), downstream);
+        workflow.remove(actorRef);
+
+        return ok("Actor removed: " + actorRef);
     }
 
     public Result upload() {

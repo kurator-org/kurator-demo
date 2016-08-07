@@ -4,6 +4,7 @@ import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
 import akka.japi.Creator;
+import controllers.DeregisterListener;
 import messages.OutputData;
 import messages.ReadFile;
 import messages.ReadMore;
@@ -19,26 +20,20 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by lowery on 8/2/16.
  */
-public class WordCountFileReader extends UntypedActor {
-    private BufferedReader reader;
+public class WordCounter extends UntypedActor {
     private ActorRef listener;
 
     Map<String, Long> count = new HashMap<>();
     int[] maxCounts = new int[20];
 
-    public WordCountFileReader() {
-        System.out.println("Created new instance of file reader: " + self());
+    public WordCounter() {
+        System.out.println("Created new instance of WordCounter actor: " + self());
     }
 
     @Override
     public void onReceive(Object message) throws Exception {
-        if (message instanceof ReadFile) {
-            FileInputStream fis = new FileInputStream(((ReadFile) message).filePath);
-            reader = new BufferedReader(new InputStreamReader(fis, "UTF-8"));
-
-            self().tell(new ReadMore(), sender());
-        } else if (message instanceof ReadMore) {
-            String line = reader.readLine();
+        if (message instanceof OutputData) {
+            String line = ((OutputData) message).line;
 
             if (line != null) {
                 StringTokenizer tokenizer = new StringTokenizer(line, " ");
@@ -64,27 +59,26 @@ public class WordCountFileReader extends UntypedActor {
                         break;
                 }
 
+                // Transform line into a count of words
+                if (listener != null)
                     listener.tell(new OutputData(sb.toString()), self());
-
-                getContext().system().scheduler().scheduleOnce(Duration.create(50, TimeUnit.MILLISECONDS),
-                        self(), new ReadMore(), getContext().system().dispatcher(), null);
-
-            } else {
-                System.out.println("Done!");
             }
         } else if (message instanceof RegisterListener) {
-            System.out.println("Registered listener");
-            listener = sender();
+                listener = ((RegisterListener) message).listener;
+            System.out.println("Registered listener " + listener + " with actor " + self());
+        } else if (message instanceof DeregisterListener) {
+            listener = null; // TODO: Support for multiple listeners
+            System.out.println("Deregistered listener " + listener + " from actor " + self());
         }
     }
 
     public static Props props() {
-        return Props.create(new Creator<WordCountFileReader>() {
+        return Props.create(new Creator<WordCounter>() {
             private static final long serialVersionUID = 1L;
 
             @Override
-            public WordCountFileReader create() throws Exception {
-                return new WordCountFileReader();
+            public WordCounter create() throws Exception {
+                return new WordCounter();
             }
         });
     }

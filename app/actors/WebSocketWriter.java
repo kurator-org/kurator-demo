@@ -21,13 +21,13 @@ public class WebSocketWriter extends UntypedActor {
     @Override
     public void preStart() throws Exception {
         System.out.println("Web socket actor pre start");
-        listensTo.tell(new RegisterListener(), self());
+        listensTo.tell(new RegisterListener(self()), self());
     }
 
     @Override
     public void onReceive(Object message) throws Exception {
-        if (message instanceof OutputData) {
-            out.tell(((OutputData) message).line, ActorRef.noSender());
+        if (message instanceof String) {
+            out.tell(message, ActorRef.noSender());
         }
     }
 }

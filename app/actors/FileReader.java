@@ -4,6 +4,7 @@ import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
 import akka.japi.Creator;
+import controllers.DeregisterListener;
 import messages.OutputData;
 import messages.ReadFile;
 import messages.ReadMore;
@@ -20,7 +21,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class FileReader extends UntypedActor {
     private BufferedReader reader;
-    private List<ActorRef> listeners = new ArrayList<>();
+    private ActorRef listener;
 
     public FileReader() {
         System.out.println("Created new instance of file reader: " + self());
@@ -37,19 +38,22 @@ public class FileReader extends UntypedActor {
             String line = reader.readLine();
 
             if (line != null) {
-                for (ActorRef listener : listeners) {
+                if (listener != null)
                     listener.tell(new OutputData(line), self());
-                }
 
-                getContext().system().scheduler().scheduleOnce(Duration.create(10, TimeUnit.MILLISECONDS),
+                // Throttle input
+                getContext().system().scheduler().scheduleOnce(Duration.create(50, TimeUnit.MILLISECONDS),
                         self(), new ReadMore(), getContext().system().dispatcher(), null);
 
             } else {
-                System.out.println("Done!");
+                System.out.println("End of file.");
             }
         } else if (message instanceof RegisterListener) {
-            System.out.println("Registered listener");
-            listeners.add(sender());
+            listener = ((RegisterListener) message).listener;
+            System.out.println("Registered listener " + listener + " with actor " + self());
+        } else if (message instanceof DeregisterListener) {
+            listener = null; // TODO: Support for multiple listeners
+            System.out.println("Deregistered listener " + listener + " from actor " + self());
         }
     }
 

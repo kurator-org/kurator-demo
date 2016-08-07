@@ -8,8 +8,8 @@
             jsPlumb.ready(function() {
                 jsPlumb.setContainer($("#canvas"));
 
-                function addActor(name) {
-                    var actor = $("<div class='actor'>" + name + "</div>").dblclick(function () {
+                function addActor(name, type) {
+                    var actor = $("<div id='" + name +"'class='" + type + "'>" + name + "</div>").dblclick(function () {
                         jsPlumb.remove(this);
                         var actorName = name;
                         $.post("actor/remove/" + actorName, function (data) {
@@ -18,11 +18,57 @@
                     });
 
                     $("#canvas").append(actor);
-                    jsPlumb.draggable(actor);
+                    jsPlumb.draggable(name);
 
-                    var inEnpoint = jsPlumb.addEndpoint(actor, {anchor: "Left", isTarget: true});
-                    var outEnpoint = jsPlumb.addEndpoint(actor, {anchor: "Right", isSource: true});
+                    if (type === "actor") {
+                        var inEnpoint = jsPlumb.addEndpoint(actor, {
+                            anchor: "Left",
+                            isTarget: true,
+                        });
+                        var outEnpoint = jsPlumb.addEndpoint(actor, {
+                            anchor: "Right",
+                            isSource: true
+                        });
+                    } else if (type === "input") {
+                        var outEnpoint = jsPlumb.addEndpoint(actor, {
+                            anchor: "Right",
+                            isSource: true
+                        });
+                    } else if (type === "output") {
+                        var inEnpoint = jsPlumb.addEndpoint(actor, {
+                            anchor: "Left",
+                            isTarget: true,
+                        });
+                    }
+
+
                 }
+
+
+                jsPlumb.bind("beforeDrop", function(data) {
+                    console.log("drop")
+                    console.log("source: " + data.sourceId);
+                    console.log("target: " + data.targetId);
+
+                    $.post("actor/connect?source=" + data.sourceId + "&target=" + data.targetId, function (data) {
+                        console.log(data);
+                    })
+
+                    return true;
+                });
+
+                jsPlumb.bind("beforeDetach", function(data) {
+                    console.log("detach")
+                    console.log("source: " + data.sourceId);
+                    console.log("target: " + data.targetId);
+
+                    $.post("actor/detach?source=" + data.sourceId + "&target=" + data.targetId, function (data) {
+                        console.log(data);
+                    })
+
+                    return true;
+
+                });
 
             $.get("list", function (data) {
                 $.each(data, function (index, value) {
@@ -33,11 +79,12 @@
             $("#add").click(function () {
                 var actorName = $("#actors").val();
 
-                $.post("actor/" + actorName, function (data) {
+                $.post("actor/add/" + actorName, function (data) {
                     console.log(data);
+                    addActor(data.actor, data.type);
                 })
 
-                addActor(actorName);
+
             });
             });
         });
