@@ -6,12 +6,11 @@ import akka.actor.ActorSystem;
 import javax.inject.*;
 
 import akka.actor.Props;
-import akka.actor.dsl.Creators;
-import akka.japi.Creator;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import messages.ReadFile;
 import messages.RegisterListener;
+import messages.SetStrategy;
 import play.libs.Json;
 import play.mvc.*;
 
@@ -60,8 +59,15 @@ public class AsyncController extends Controller {
 
         actorRegistry.put("FileReader", FileReader.props());
         actorRegistry.put("WordCounter", WordCounter.props());
-        actorRegistry.put("StringReverse", StringReverse.props());
+        actorRegistry.put("StringTransformer", StringTransformer.props());
         actorRegistry.put("OutputAdapter", OutputAdapter.props());
+    }
+
+    public Result set(String name, String strategy) {
+        ActorRef actorRef = actors.get(name);
+        actorRef.tell(new SetStrategy(strategy), ActorRef.noSender());
+
+        return ok();
     }
 
     public Result connect(String source, String target) {
@@ -113,6 +119,14 @@ public class AsyncController extends Controller {
 
         json.put("actor", name);
         json.put("type", type);
+
+        if (name.equals("StringTransformer")) {
+            ArrayNode strategies = Json.newArray();
+            strategies.add("ReverseWord");
+            strategies.add("PigLatin");
+
+            json.set("strategies", strategies);
+        }
 
         return ok(json);
     }

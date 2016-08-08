@@ -17,5 +17,7 @@ POST    /actor/remove/:name         controllers.AsyncController.remove(name : St
 POST    /actor/connect         controllers.AsyncController.connect(source : String, target: String)
 POST    /actor/detach         controllers.AsyncController.detach(source : String, target: String)
 
+POST     /actor/set/:name                controllers.AsyncController.set(name : String, strategy : String)
+
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)

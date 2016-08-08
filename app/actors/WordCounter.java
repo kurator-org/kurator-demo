@@ -4,11 +4,14 @@ import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
 import akka.japi.Creator;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import controllers.DeregisterListener;
 import messages.OutputData;
 import messages.ReadFile;
 import messages.ReadMore;
 import messages.RegisterListener;
+import play.libs.Json;
 import scala.concurrent.duration.Duration;
 
 import java.io.BufferedReader;
@@ -47,21 +50,29 @@ public class WordCounter extends UntypedActor {
                     }
                 }
 
-                StringBuilder sb = new StringBuilder();
-
                 Map<String, Long> sorted = MapUtil.sortByValue(count);
+
+                ArrayNode wordCountArray = Json.newArray();
 
                 int i = 0;
                 for (String word : sorted.keySet()) {
+
                     i++;
-                    sb.append(word).append(": ").append(count.get(word)).append("<br />");
+
+                    ObjectNode wordCount = Json.newObject();
+
+                    wordCount.put("word", word);
+                    wordCount.put("count", count.get(word));
+
+                    wordCountArray.add(wordCount);
+
                     if (i > 24)
                         break;
                 }
 
                 // Transform line into a count of words
                 if (listener != null)
-                    listener.tell(new OutputData(sb.toString()), self());
+                    listener.tell(new OutputData(wordCountArray.toString()), self());
             }
         } else if (message instanceof RegisterListener) {
                 listener = ((RegisterListener) message).listener;
