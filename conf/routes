@@ -4,7 +4,6 @@
 
 GET     /list                       controllers.DemoController.list()
 GET     /                           controllers.DemoController.demo()
-GET     /console                    controllers.DemoController.console()
 POST    /upload                     controllers.DemoController.upload()
 GET     /socket                     controllers.DemoController.socket()
 

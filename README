@@ -14,22 +14,26 @@ Directory structure
 
  Contains implementations of the akka actors used in the builder
 
- - app/controllers
+- app/controllers
 
  Demo controller handles all of the http requests and passes them off as messages to the actor system
 
- - app/messages
+- app/messages
 
  Messages used by the actors
 
- - app/transformers
+- app/transformers
 
  Transformer interface and implementation classes used by the StringTransformer actor.
 
- - app/views
+- app/views
 
  Html template pages
 
- - data
+- conf/routes
+
+ The http endpoint to controller method mappings file
+
+- data
 
  Test data that can be used as input
