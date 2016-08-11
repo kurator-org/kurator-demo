@@ -1,7 +1,7 @@
 package transformers;
 
 /**
- * Created by lowery on 8/8/16.
+ * An interface for a strategy
  */
 public interface StringTransformerStrategy {
     public String transform(String line);

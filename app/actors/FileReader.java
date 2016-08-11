@@ -4,20 +4,17 @@ import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
 import akka.japi.Creator;
-import controllers.DeregisterListener;
-import messages.OutputData;
-import messages.ReadFile;
-import messages.ReadMore;
-import messages.RegisterListener;
+import messages.*;
 import scala.concurrent.duration.Duration;
 
-import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Created by lowery on 8/2/16.
+ * File reader actor will read a text file line by line.
+ *
  */
 public class FileReader extends UntypedActor {
     private BufferedReader reader;
@@ -30,30 +27,40 @@ public class FileReader extends UntypedActor {
     @Override
     public void onReceive(Object message) throws Exception {
         if (message instanceof ReadFile) {
+            // Set up the actor to start reading files
+
             FileInputStream fis = new FileInputStream(((ReadFile) message).filePath);
             reader = new BufferedReader(new InputStreamReader(fis, "UTF-8"));
 
             self().tell(new ReadMore(), sender());
+
         } else if (message instanceof ReadMore) {
+            // Read another line from the file and send to the downstream actor
+
             String line = reader.readLine();
 
             if (line != null) {
                 if (listener != null)
                     listener.tell(new OutputData(line), self());
 
-                // Throttle input
+                // Throttle input, otherwise it's too fast
                 getContext().system().scheduler().scheduleOnce(Duration.create(50, TimeUnit.MILLISECONDS),
                         self(), new ReadMore(), getContext().system().dispatcher(), null);
 
             } else {
                 System.out.println("End of file.");
             }
+
         } else if (message instanceof RegisterListener) {
+
             listener = ((RegisterListener) message).listener;
             System.out.println("Registered listener " + listener + " with actor " + self());
+
         } else if (message instanceof DeregisterListener) {
+
             listener = null; // TODO: Support for multiple listeners
             System.out.println("Deregistered listener " + listener + " from actor " + self());
+
         }
     }
 

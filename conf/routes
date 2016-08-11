@@ -2,22 +2,20 @@
 # This file defines all application routes (Higher priority routes first)
 # ~~~~
 
-# An example controller showing a sample home page
-GET     /                           controllers.HomeController.index
-# An example controller showing how to use dependency injection
-GET     /count                      controllers.CountController.count
-# An example controller showing how to write asynchronous code
-POST     /actor/add/:name                controllers.AsyncController.add(name : String)
-GET     /list                       controllers.AsyncController.list()
-GET     /demo                       controllers.AsyncController.demo()
-GET     /console                    controllers.AsyncController.console()
-POST    /upload                     controllers.AsyncController.upload()
-GET     /socket                     controllers.AsyncController.socket()
-POST    /actor/remove/:name         controllers.AsyncController.remove(name : String)
-POST    /actor/connect         controllers.AsyncController.connect(source : String, target: String)
-POST    /actor/detach         controllers.AsyncController.detach(source : String, target: String)
+GET     /list                       controllers.DemoController.list()
+GET     /                           controllers.DemoController.demo()
+GET     /console                    controllers.DemoController.console()
+POST    /upload                     controllers.DemoController.upload()
+GET     /socket                     controllers.DemoController.socket()
 
-POST     /actor/set/:name                controllers.AsyncController.set(name : String, strategy : String)
+# Dynamically construct workflow
+POST    /actor/add/:name            controllers.DemoController.add(name : String)
+POST    /actor/remove/:name         controllers.DemoController.remove(name : String)
+POST    /actor/connect              controllers.DemoController.connect(source : String, target: String)
+POST    /actor/detach               controllers.DemoController.detach(source : String, target: String)
+
+# Set actor property
+POST    /actor/set/:name           controllers.DemoController.set(name : String, strategy : String)
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)

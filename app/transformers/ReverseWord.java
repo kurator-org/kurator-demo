@@ -3,7 +3,7 @@ package transformers;
 import java.util.StringTokenizer;
 
 /**
- * Created by lowery on 8/8/16.
+ * Reverse all words in the line
  */
 public class ReverseWord implements StringTransformerStrategy {
     @Override
@@ -17,11 +17,7 @@ public class ReverseWord implements StringTransformerStrategy {
             for (int i = word.length(); i > 0; i--) {
                 reversed.append(word.charAt(i-1));
             }
-
-            reversed.append(" ");
         }
-
-        reversed.append("\n");
 
         return reversed.toString();
     }

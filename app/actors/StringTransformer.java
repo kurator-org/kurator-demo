@@ -4,22 +4,19 @@ import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
 import akka.japi.Creator;
-import controllers.DeregisterListener;
+import messages.DeregisterListener;
 import messages.OutputData;
 import messages.RegisterListener;
 import messages.SetStrategy;
-import net.sf.ehcache.config.PersistenceConfiguration;
-import org.springframework.beans.factory.annotation.Configurable;
 import transformers.PigLatin;
 import transformers.ReverseWord;
 import transformers.StringTransformerStrategy;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.StringTokenizer;
 
 /**
- * Created by lowery on 8/7/16.
+ * String transforming actor will transform a string using a configurable strategy
  */
 public class StringTransformer extends UntypedActor {
     private ActorRef listener;
@@ -37,21 +34,31 @@ public class StringTransformer extends UntypedActor {
     @Override
     public void onReceive(Object message) throws Exception {
         if (message instanceof OutputData) {
+            // Transform this line of text using the strategy class
+
             String line = ((OutputData) message).line;
             String output = strategy.transform(line);
 
             if (listener != null)
                 listener.tell(new OutputData(output), self());
+
         } else if (message instanceof RegisterListener) {
+
             listener = ((RegisterListener) message).listener;
             System.out.println("Registered listener " + listener + " with actor " + self());
+
         } else if (message instanceof DeregisterListener) {
+
             listener = null; // TODO: Support for multiple listeners
             System.out.println("Deregistered listener " + listener + " from actor " + self());
+
         } else if (message instanceof SetStrategy) {
+            // Set the strategy implementation that this actor should use
+
             String name = ((SetStrategy) message).strategy;
             strategy = strategyMap.get(name);
             System.out.println("Changing StringTransformer strategy to " + name);
+
         }
     }
 

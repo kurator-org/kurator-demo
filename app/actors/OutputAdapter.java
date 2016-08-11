@@ -4,12 +4,12 @@ import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
 import akka.japi.Creator;
-import controllers.DeregisterListener;
+import messages.DeregisterListener;
 import messages.OutputData;
 import messages.RegisterListener;
 
 /**
- * Created by lowery on 8/7/16.
+ * OutputAdapter interfaces with the WebSocketWriter in the web app.
  */
 public class OutputAdapter extends UntypedActor {
     private ActorRef listener;
@@ -21,14 +21,20 @@ public class OutputAdapter extends UntypedActor {
     @Override
     public void onReceive(Object message) throws Exception {
         if (message instanceof OutputData) {
+
             if (listener != null)
                 listener.tell(((OutputData) message).line, self());
+
         } else if (message instanceof RegisterListener) {
+
             listener = ((RegisterListener) message).listener;
             System.out.println("Registered listener " + listener + " with actor " + self());
+
         } else if (message instanceof DeregisterListener) {
+
             listener = null; // TODO: Support for multiple listeners
             System.out.println("Deregistered listener " + listener + " from actor " + self());
+
         }
     }
 

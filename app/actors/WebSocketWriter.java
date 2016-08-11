@@ -2,11 +2,10 @@ package actors;
 
 import akka.actor.ActorRef;
 import akka.actor.UntypedActor;
-import messages.OutputData;
 import messages.RegisterListener;
 
 /**
- * Created by lowery on 8/2/16.
+ * Web socket writer class establishes a connection with a browser via Websockets
  */
 public class WebSocketWriter extends UntypedActor {
 

@@ -1,9 +1,7 @@
 package transformers;
 
-import java.util.Scanner;
-
 /**
- * Created by lowery on 8/8/16.
+ * Pig latin transformer implementation
  */
 public class PigLatin implements StringTransformerStrategy {
 

@@ -3,59 +3,46 @@ package controllers;
 import actors.*;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
-import javax.inject.*;
-
 import akka.actor.Props;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import messages.DeregisterListener;
 import messages.ReadFile;
 import messages.RegisterListener;
 import messages.SetStrategy;
 import play.libs.Json;
 import play.mvc.*;
+import scala.concurrent.ExecutionContextExecutor;
+import views.html.index;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executor;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import scala.concurrent.ExecutionContextExecutor;
-import views.html.console;
-import views.html.demo;
-
-import static akka.pattern.Patterns.ask;
-
 /**
- * This controller contains an action that demonstrates how to write
- * simple asynchronous code in a controller. It uses a timer to
- * asynchronously delay sending a response for 1 second.
+ * Main controller handles requests listed in the routes file
  *
- * @param actorSystem We need the {@link ActorSystem}'s
- * {@link Scheduler} to run code after a delay.
- * @param exec We need a Java {@link Executor} to apply the result
- * of the {@link CompletableFuture} and a Scala
- * {@link ExecutionContext} so we can use the Akka {@link Scheduler}.
- * An {@link ExecutionContextExecutor} implements both interfaces.
  */
 @Singleton
-public class AsyncController extends Controller {
+public class DemoController extends Controller {
 
     private final ActorSystem actorSystem;
-    private final ExecutionContextExecutor exec;
 
-    Map<String, Props> actorRegistry = new HashMap<>();
+    private Map<String, Props> actorRegistry = new HashMap<>();
 
-    Map<String, ActorRef> actors = new HashMap<>();
-    List<ActorRef> workflow = new ArrayList<>();
+    private Map<String, ActorRef> actors = new HashMap<>();
+    private List<ActorRef> workflow = new ArrayList<>();
 
     @Inject
-    public AsyncController(ActorSystem actorSystem, ExecutionContextExecutor exec) {
+    public DemoController(ActorSystem actorSystem, ExecutionContextExecutor exec) {
         this.actorSystem = actorSystem;
-        this.exec = exec;
+
+        // Hardcoded list of actors by name
 
         actorRegistry.put("FileReader", FileReader.props());
         actorRegistry.put("WordCounter", WordCounter.props());
@@ -63,6 +50,12 @@ public class AsyncController extends Controller {
         actorRegistry.put("OutputAdapter", OutputAdapter.props());
     }
 
+    /**
+     * Set the strategy that the named actor should use by sending the actor a SetStrategy message
+     *
+     * @param name
+     * @param strategy
+     */
     public Result set(String name, String strategy) {
         ActorRef actorRef = actors.get(name);
         actorRef.tell(new SetStrategy(strategy), ActorRef.noSender());
@@ -70,22 +63,41 @@ public class AsyncController extends Controller {
         return ok();
     }
 
+    /**
+     * Register target as a listener of the source actor
+     *
+     * @param source
+     * @param target
+     * @return
+     */
     public Result connect(String source, String target) {
         actors.get(source).tell(new RegisterListener(actors.get(target)), actors.get(target));
-        return ok("Connect: " + target + " listensTo " + source);
+        return ok();
     }
 
+    /**
+     * Deregister target as a listener of the source actor
+     *
+     * @param source
+     * @param target
+     * @return
+     */
     public Result detach(String source, String target) {
         actors.get(source).tell(new DeregisterListener(actors.get(target)), actors.get(target));
-        return ok("Detach: " + target + " listensTo " + source);
+        return ok();
     }
 
-
+    /**
+     * Main page
+     */
     public Result demo() {
-        return ok(demo.render());
+        return ok(index.render());
     }
 
+    // Opens a web socket connection with the browser via akka actor
     public LegacyWebSocket<String> socket() {
+
+        // Register the websocket as a listener of the last actor in the workflow
         final ActorRef last = workflow.get(workflow.size()-1);
 
         return WebSocket.withActor(new Function<ActorRef, Props>() {
@@ -96,10 +108,12 @@ public class AsyncController extends Controller {
         });
     }
 
-    public Result console() {
-        return ok(console.render());
-    }
-
+    /**
+     * The add endpoint will create an instance of an actor.
+     *
+     * @param name identifies the actor in the map
+     * @return json response
+     */
     public Result add(String name) {
         Props props = actorRegistry.get(name);
         ActorRef actorRef = actorSystem.actorOf(props);
@@ -131,24 +145,28 @@ public class AsyncController extends Controller {
         return ok(json);
     }
 
+    /**
+     * Stop and remove an instance of the actor from the workflow
+     *
+     * @param name actor name
+     */
     public Result remove(String name) {
         ActorRef actorRef = actors.remove(name);
 
-        //int actorPos = workflow.indexOf(actorRef);
-        //ActorRef upstream = workflow.get(actorPos-1);
-        //ActorRef downstream = workflow.get(actorPos+1);
-
-        //upstream.tell(new RegisterListener(downstream), downstream);
+        actorSystem.stop(actorRef);
         workflow.remove(actorRef);
 
-        return ok("Actor removed: " + actorRef);
+        return ok();
     }
 
+    /**
+     * Upload a file and send the path to the first actor in the workflow
+     *
+     */
     public Result upload() {
         Http.MultipartFormData<File> body = request().body().asMultipartFormData();
         Http.MultipartFormData.FilePart<File> file = body.getFile("file");
 
-        System.out.println(file.getFile().getAbsolutePath());
         ReadFile message = new ReadFile(file.getFile().getAbsolutePath());
 
         workflow.get(0).tell(message, ActorRef.noSender());
@@ -156,6 +174,10 @@ public class AsyncController extends Controller {
         return ok("File upload success!");
     }
 
+    /**
+     * Responds with all actor metadata in the list as json
+     *
+     */
     public Result list() {
         return ok(Json.toJson(actorRegistry.keySet()));
     }

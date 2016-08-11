@@ -1,49 +1,35 @@
-This is your new Play application
+Kurator Akka Web Demo
 =================================
 
-This file will be packaged with your application when using `activator dist`.
+Demonstrates the use of actors in a workflow builder that allows you to dynamically add and configure actors to a
+running system
 
-There are several demonstration files available in this template.
+Check out this project and run from the command line via "activator run". The activator will download all dependencies
+and compile the project for you automatically.
 
-Controllers
+Directory structure
 ===========
 
-- HomeController.java:
+- app/actors/
 
-  Shows how to handle simple HTTP requests.
+ Contains implementations of the akka actors used in the builder
 
-- AsyncController.java:
+ - app/controllers
 
-  Shows how to do asynchronous programming when handling a request.
+ Demo controller handles all of the http requests and passes them off as messages to the actor system
 
-- CountController.java:
+ - app/messages
 
-  Shows how to inject a component into a controller and use the component when
-  handling requests.
+ Messages used by the actors
 
-Components
-==========
+ - app/transformers
 
-- Module.java:
+ Transformer interface and implementation classes used by the StringTransformer actor.
 
-  Shows how to use Guice to bind all the components needed by your application.
+ - app/views
 
-- Counter.java:
+ Html template pages
 
-  An example of a component that contains state, in this case a simple counter.
+ - data
 
-- ApplicationTimer.java:
-
-  An example of a component that starts when the application starts and stops
-  when the application stops.
-
-Filters
-=======
-
-- Filters.java:
-
-  Creates the list of HTTP filters used by your application.
-
-- ExampleFilter.java
-
-  A simple filter that adds a header to every response.
+ Test data that can be used as input
