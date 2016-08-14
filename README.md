@@ -4,7 +4,7 @@ Kurator Akka Web Demo
 Demonstrates the use of actors in a workflow builder that allows you to dynamically add and configure actors to a
 running system
 
-Check out this project and run from the command line via "activator run". The activator will download all dependencies
+Check out this project and run from the command line via "bin/activator run". The activator will download all dependencies
 and compile the project for you automatically.
 
 Directory structure
